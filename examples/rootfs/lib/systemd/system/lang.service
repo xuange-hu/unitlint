@@ -1,0 +1,9 @@
+[Unit]
+Description=Language service, older copy
+
+[Service]
+User=root
+ExecStart=/usr/lib/lang/langd --legacy
+
+[Install]
+WantedBy=multi-user.target

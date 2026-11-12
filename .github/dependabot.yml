@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    # mcp 2.x renamed FastMCP to MCPServer and moved the import path. The
+    # constraint in pyproject is <2 on purpose; a major bump is a code change,
+    # not a dependency bump.
+    ignore:
+      - dependency-name: "mcp"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3

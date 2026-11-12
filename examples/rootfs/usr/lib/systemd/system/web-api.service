@@ -1,0 +1,28 @@
+[Unit]
+Description=Web API
+Documentation=https://example.invalid/web-api
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+ExecStart=/bin/sh -c "/tmp/web-api --port 8080"
+EnvironmentFile=/tmp/web-api.env
+Environment="DB_PASSWORD=hunter2" "API_KEY_FILE=/etc/web-api/api.key"
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/etc /var/lib/web-api
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_SETUID
+UMask=0000
+StandardOutput=append:/tmp/web-api.log
+WorkingDirectory=/home/deploy
+ExecStop=killall web-api
+LimitNOFILE=infinity
+PermissionsStartOnly=true
+Restart=always
+
+[Install]

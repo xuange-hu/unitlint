@@ -1,0 +1,78 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Is the project registered on PyPI?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      # Trusted Publishing needs the project to exist on PyPI *and* a publisher
+      # configured for this repository. Until that one-time setup happens the
+      # upload fails with "invalid-publisher" and paints a red X on every
+      # release -- a red X that means "not set up yet", which nobody can tell
+      # apart from "the package is broken". Ask first, skip deliberately, and
+      # start publishing on the first release after the setup is done.
+      - id: check
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" https://pypi.org/pypi/unitlint/json || true)
+          echo "pypi status: $code"
+          if [ "$code" = "200" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::unitlint is not on PyPI yet. Register the project and a Trusted Publisher for xuange-hu/unitlint, then re-run this workflow."
+          fi
+
+  build:
+    name: Build distributions
+    needs: preflight
+    if: needs.preflight.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+    permissions:
+      # Required for PyPI Trusted Publishing (OIDC) -- no API token needed.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # release/v1

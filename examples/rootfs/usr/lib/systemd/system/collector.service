@@ -1,0 +1,10 @@
+[Unit]
+Description=Metrics collector
+
+[Service]
+Type=notify
+User=stats
+ExecStart=/usr/lib/collector/collector
+
+[Install]
+WantedBy=multi-user.target

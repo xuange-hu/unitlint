@@ -1,0 +1,9 @@
+[Unit]
+Description=Legacy helper
+
+[Services]
+User=legacy
+ExecStart=/usr/lib/legacy/helper
+
+[Service]
+ExecStart=bin/legacy-helper

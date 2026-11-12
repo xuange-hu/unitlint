@@ -1,0 +1,48 @@
+name: Bug report
+description: A crash, a wrong result, or a false positive
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A false positive is the most valuable report here: a scanner that cries
+        wolf gets switched off. Please reduce it to the smallest tree that still
+        reproduces.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran and the output you got.
+      render: console
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: tree
+    attributes:
+      label: The unit tree
+      description: |
+        Just the files involved: the base unit, the drop-ins, and the paths they
+        sit at. Paths matter - most merge bugs are about the directory.
+      render: ini
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: unitlint version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version and OS
+      placeholder: "3.12 on Ubuntu 24.04"
+    validations:
+      required: true

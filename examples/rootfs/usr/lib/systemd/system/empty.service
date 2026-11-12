@@ -1,0 +1,8 @@
+[Unit]
+Description=A unit that forgot its command
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

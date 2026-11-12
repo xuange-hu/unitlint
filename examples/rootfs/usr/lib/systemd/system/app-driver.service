@@ -1,0 +1,10 @@
+[Unit]
+Description=Driver for the application stack
+After=app.target
+
+[Service]
+User=app
+ExecStart=/usr/lib/app/driver
+
+[Install]
+WantedBy=app-stack.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Metrics endpoint
+
+[Socket]
+ListenStream=0.0.0.0:9090
+SocketMode=0666
+Accept=yes
+
+[Install]
+WantedBy=sockets.target

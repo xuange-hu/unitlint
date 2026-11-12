@@ -1,0 +1,9 @@
+[Unit]
+Description=Language service
+
+[Service]
+User=lang
+ExecStart=/usr/lib/lang/langd
+
+[Install]
+WantedBy=multi-user.target

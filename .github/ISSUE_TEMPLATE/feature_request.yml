@@ -1,0 +1,32 @@
+name: Rule or feature request
+description: Suggest a rule, an output mode, or an input format
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is it
+      options:
+        - A new rule
+        - A false positive to remove
+        - An output format
+        - An input format (rootfs layout, image, ...)
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: Detail
+      description: |
+        For a rule: the directive or combination, the severity you would give it,
+        and the smallest unit that should trigger it.
+    validations:
+      required: true
+  - type: textarea
+    id: noise
+    attributes:
+      label: How often does this pattern appear in legitimate units?
+      description: |
+        A rule that fires on every stock distribution unit is worth less than one
+        that fires once, on the unit that is actually wrong.

@@ -1,0 +1,11 @@
+[Unit]
+Description=Legacy agent (patched 2019)
+
+[Service]
+Type=simple
+User=root
+ExecStart=/opt/legacy-agent/agent --compat
+NoNewPrivileges=no
+
+[Install]
+WantedBy=multi-user.target

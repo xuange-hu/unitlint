@@ -1,0 +1,14 @@
+[Unit]
+Description=Nightly report
+
+[Service]
+Type=forking
+User=report
+Group=root
+SupplementaryGroups=root
+ExecStart=/usr/lib/report/report --all
+Restart=always
+RestartSec=0
+
+[Install]
+WantedBy=multi-user.target

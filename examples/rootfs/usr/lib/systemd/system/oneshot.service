@@ -1,0 +1,10 @@
+[Unit]
+Description=Apply sysctl knobs once
+
+[Service]
+Type=oneshot
+User=sysadmin
+ExecStart=/usr/lib/knobs/apply
+
+[Install]
+WantedBy=multi-user.target

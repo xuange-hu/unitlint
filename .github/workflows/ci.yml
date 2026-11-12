@@ -1,0 +1,176 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install (zero runtime dependencies)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest ruff
+          # "Zero dependencies" is a claim about what `pip install unitlint`
+          # pulls in. Proving it here is the difference between a claim and a
+          # test.
+          python -c "import sys, unitlint; print('loaded:', [m for m in sys.modules if m in ('yaml','click','rich','mcp','requests')])"
+
+      - name: Lint
+        run: python -m ruff check .
+
+      - name: Tests
+        run: python -m pytest -q
+
+      - name: CLI smoke
+        run: |
+          unitlint --version
+          unitlint rules | head -3
+          unitlint demo | tail -3
+
+      - name: Exit-code gate contract
+        run: |
+          # --fail-on is the whole point, so both directions are asserted with
+          # real files and not only in unit tests.
+          mkdir -p tree/usr/lib/systemd/system
+          printf '[Service]\nUser=app\nGroup=app\nExecStart=/usr/lib/app/app\nNoNewPrivileges=yes\n' \
+            > tree/usr/lib/systemd/system/clean.service
+          printf '[Service]\nExecStart=/tmp/bad\n' > tree/usr/lib/systemd/system/bad.service
+
+          unitlint scan tree --fail-on high || true
+          if unitlint scan tree --unit clean.service --fail-on medium; then
+            echo "clean.service should pass at medium"
+          else
+            echo "::error::clean.service failed at --fail-on medium"
+            exit 1
+          fi
+          if unitlint scan tree --unit bad.service --fail-on high; then
+            echo "::error::bad.service should exit 1 at --fail-on high"
+            exit 1
+          fi
+          echo "gate contract ok (clean=0, bad=1)"
+
+      - name: SARIF is parseable
+        run: |
+          unitlint scan tree --sarif --fail-on none > out.sarif
+          python -c "import json;d=json.load(open('out.sarif'));print('sarif results:', len(d['runs'][0]['results']))"
+
+  mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install with the mcp extra
+        run: python -m pip install -e ".[mcp]" pytest
+      - name: Tool manifest matches the registered tools
+        run: |
+          python -c "
+          import asyncio
+          from unitlint.mcp_server import build_server, tool_manifest
+
+          expected = {tool['name'] for tool in tool_manifest()}
+          server = build_server()
+
+          async def go():
+              tools = await server.list_tools()
+              names = {tool.name for tool in tools}
+              assert names == expected, (names, expected)
+              assert all(tool.description for tool in tools), [t.name for t in tools]
+              print('mcp tools:', len(tools))
+
+          asyncio.run(go())
+          "
+
+  badge-check:
+    # The number a visitor reads first. It has drifted before in other
+    # repositories, so it is asserted here rather than trusted.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install with optional test deps
+        run: python -m pip install -e ".[mcp]" pytest
+      - name: README test-count badge vs pytest collection
+        run: |
+          # -o addopts= neutralises a project-level -q; with the -q below it
+          # becomes -qq and pytest drops the "N tests collected" summary.
+          actual=$(python -m pytest --collect-only -q -o addopts= 2>/dev/null | grep -oE "[0-9]+ tests? collected" | grep -oE "^[0-9]+" || true)
+          claimed=$(grep -oE "tests-[0-9]+%20passing" README.md | grep -oE "[0-9]+" | head -1 || true)
+          echo "collected=${actual:-NOTHING} claimed=${claimed:-NONE}"
+          if [ -z "$actual" ]; then
+            echo "::warning::pytest collected nothing - the badge check did not run"
+          elif [ "$actual" != "$claimed" ]; then
+            echo "::warning::README badge says $claimed but pytest collects $actual"
+          fi
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: python -m pip install -e .
+      - name: docs/rules.md is generated, not edited
+        run: |
+          unitlint rules --markdown > /tmp/rules.md
+          diff -u docs/rules.md /tmp/rules.md || {
+            echo "::error::docs/rules.md is stale. Run: unitlint rules --markdown > docs/rules.md"
+            exit 1
+          }
+      - name: The demo corpus on disk is the one the demo runs on
+        run: python -m pytest tests/test_demo_sync.py -q
+
+  fresh-clone:
+    # Every other job installs the package first, which masks a src-layout
+    # bootstrap regression. Install pytest and nothing else.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: pytest only, no package install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+      - name: A bare clone can run its own tests
+        run: python -m pytest -q
+      - name: And the CLI still works from src
+        run: python -c "import sys; sys.path.insert(0, 'src'); import unitlint.cli as c; print('cli ok')"

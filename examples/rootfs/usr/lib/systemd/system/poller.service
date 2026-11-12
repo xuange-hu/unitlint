@@ -1,0 +1,11 @@
+[Unit]
+Description=Poller that lives in /tmp
+
+[Service]
+Type=simple
+User=poller
+ExecStart=/tmp/poller --watch
+WorkingDirectory=/tmp/poller
+
+[Install]
+WantedBy=multi-user.target

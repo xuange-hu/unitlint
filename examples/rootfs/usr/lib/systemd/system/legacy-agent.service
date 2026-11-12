@@ -1,0 +1,11 @@
+[Unit]
+Description=Legacy agent
+
+[Service]
+Type=simple
+User=legacy
+ExecStart=/usr/lib/legacy-agent/agent
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

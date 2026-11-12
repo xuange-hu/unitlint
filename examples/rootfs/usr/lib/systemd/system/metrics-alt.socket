@@ -1,0 +1,8 @@
+[Unit]
+Description=Metrics endpoint, second attempt
+
+[Socket]
+ListenStream=0.0.0.0:9090
+
+[Install]
+WantedBy=sockets.target

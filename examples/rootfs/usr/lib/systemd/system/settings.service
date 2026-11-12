@@ -1,0 +1,13 @@
+[Unit]
+Description=Tune the host
+DefaultDependencies=no
+
+[Service]
+User=admin-tools
+ExecStart=/usr/lib/tuning/apply
+ProtectSystem=strict
+ReadWritePaths=/etc
+WantedBy=multi-user.target
+
+[Install]
+WantedBy=multi-user.target
