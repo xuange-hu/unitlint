@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from helpers import fired, messages, tree, vendor
+from helpers import fired, messages, report, tree, vendor
 
 from unitlint import engine
 
@@ -331,6 +331,36 @@ def test_unt109_silent_when_the_target_exists():
         }
     )
     assert "UNT109" not in fired(context.units["a.service"], context)
+
+
+def test_empty_unit_points_at_the_file():
+    unit, context = vendor("", name="empty.service")
+    findings = report(unit, context).findings
+    assert [finding.rule for finding in findings] == ["UNT001"]
+    assert findings[0].where == "/usr/lib/systemd/system/empty.service"
+
+
+def test_every_finding_names_a_file():
+    """A finding without a location cannot be acted on, so it is a bug."""
+    from unitlint import demo
+
+    contexts = [
+        demo.context(),
+        tree(
+            {
+                "usr/lib/systemd/system/empty.service": "",
+                "usr/lib/systemd/system/drop.service": "[Service]\nExecStart=/tmp/x\n",
+                "etc/systemd/system/drop.service.d/9.conf": "[Service]\nUser=nobody\n",
+                "etc/systemd/system/ghost.service.d/x.conf": "[Service]\nExecStart=/usr/bin/true\n",
+                "etc/systemd/system/drop.service.d/README": "x\n",
+            }
+        ),
+    ]
+    for context in contexts:
+        for result in engine.scan(context):
+            for finding in result.findings:
+                assert finding.where, (result.source, finding.rule)
+                assert finding.line >= 1, (result.source, finding.rule)
 
 
 def test_every_rule_id_has_a_check_or_is_a_context_check():

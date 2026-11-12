@@ -228,12 +228,30 @@ def no_exec_start(unit: Unit, _context: ScanContext | None) -> list[Finding]:
         return []
     if unit.present("Service", "ExecStart"):
         return []
-    return [_mk("UNT001", "the [Service] section defines no ExecStart, so the unit cannot start", _first(unit))]
+    # Point at the file even when it holds nothing: an empty unit is still the
+    # file someone has to fix, and a finding with no location is unactionable.
+    evidence = _first(unit)
+    if evidence is not None:
+        return [_mk("UNT001", "the [Service] section defines no ExecStart, so the unit cannot start", evidence)]
+    return [
+        _mk(
+            "UNT001",
+            "the unit file defines no ExecStart, so the unit cannot start",
+            None,
+            where=unit.base.path,
+            line=1,
+            saw="",
+        )
+    ]
 
 
 @attach("UNT002")
 def runs_as_root(unit: Unit, _context: ScanContext | None) -> list[Finding]:
     if unit.kind != "service" or unit.base is None:
+        return []
+    # A unit with no command is UNT001's finding, not a privilege finding: there
+    # is nothing to run, and reporting both would bury the one that matters.
+    if not unit.present("Service", "ExecStart"):
         return []
     if not _runs_as_root(unit):
         return []
@@ -354,6 +372,8 @@ def literal_secret(unit: Unit, _context: ScanContext | None) -> list[Finding]:
 @attach("UNT008")
 def no_new_privileges_off(unit: Unit, _context: ScanContext | None) -> list[Finding]:
     if unit.kind != "service" or unit.base is None or not _runs_as_root(unit):
+        return []
+    if not unit.present("Service", "ExecStart"):
         return []
     if unit.flag("Service", "NoNewPrivileges") is True:
         return []

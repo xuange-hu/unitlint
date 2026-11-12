@@ -18,7 +18,7 @@ First release.
 - **Outputs.** Text, JSON and SARIF 2.1.0 (one run for a whole tree).
 - **Inputs.** A single unit file, a directory of units, a mounted rootfs, or a
   container layer.
-- **Zero runtime dependencies.** 235 tests, including a bare-clone bootstrap
+- **Zero runtime dependencies.** 237 tests, including a bare-clone bootstrap
   test that runs without installing the package.
 - **MCP server** (`unitlint-mcp`), 7 tools over the same engine the CLI runs.
 - **Built-in corpus** (`unitlint demo`) that fires all 44 rules; a test asserts

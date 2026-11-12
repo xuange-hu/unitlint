@@ -3,7 +3,7 @@
 **按 systemd 装载单元的方式来审计单元**：搜索路径优先级、drop-in 覆盖、以及某个指令最后一次是谁设的。
 
 [![CI](https://github.com/xuange-hu/unitlint/actions/workflows/ci.yml/badge.svg)](https://github.com/xuange-hu/unitlint/actions/workflows/ci.yml)
-![tests-235%20passing](https://img.shields.io/badge/tests-235%20passing-brightgreen)
+![tests-237%20passing](https://img.shields.io/badge/tests-237%20passing-brightgreen)
 ![rules-44](https://img.shields.io/badge/rules-44-blue)
 ![dependencies-0](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![python-3.10%2B](https://img.shields.io/badge/python-3.10%2B-blue)
@@ -156,7 +156,7 @@ uvx --from "unitlint[mcp]" unitlint-mcp      # stdio 服务，7 个工具
 
 ```bash
 git clone https://github.com/xuange-hu/unitlint && cd unitlint
-python -m pytest -q                 # 235 个测试，不需要先安装
+python -m pytest -q                 # 237 个测试，不需要先安装
 python -m ruff check .
 python -m unitlint demo             # 44/44 必须全中
 ```

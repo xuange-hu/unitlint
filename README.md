@@ -3,7 +3,7 @@
 **Audit systemd units the way systemd assembles them** — search-path priority, drop-in overrides, and who set a directive last.
 
 [![CI](https://github.com/xuange-hu/unitlint/actions/workflows/ci.yml/badge.svg)](https://github.com/xuange-hu/unitlint/actions/workflows/ci.yml)
-![tests-235%20passing](https://img.shields.io/badge/tests-235%20passing-brightgreen)
+![tests-237%20passing](https://img.shields.io/badge/tests-237%20passing-brightgreen)
 ![rules-44](https://img.shields.io/badge/rules-44-blue)
 ![dependencies-0](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![python-3.10%2B](https://img.shields.io/badge/python-3.10%2B-blue)
@@ -164,7 +164,7 @@ uvx --from "unitlint[mcp]" unitlint-mcp      # stdio server, 7 tools
 
 ```bash
 git clone https://github.com/xuange-hu/unitlint && cd unitlint
-python -m pytest -q                 # 235 tests, no install needed
+python -m pytest -q                 # 237 tests, no install needed
 python -m ruff check .
 python -m unitlint demo             # 44/44 rules must fire
 ```
