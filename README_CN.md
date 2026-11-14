@@ -3,7 +3,7 @@
 **按 systemd 装载单元的方式来审计单元**：搜索路径优先级、drop-in 覆盖、以及某个指令最后一次是谁设的。
 
 [![CI](https://github.com/xuange-hu/unitlint/actions/workflows/ci.yml/badge.svg)](https://github.com/xuange-hu/unitlint/actions/workflows/ci.yml)
-![tests-237%20passing](https://img.shields.io/badge/tests-237%20passing-brightgreen)
+![tests-247%20passing](https://img.shields.io/badge/tests-247%20passing-brightgreen)
 ![rules-44](https://img.shields.io/badge/rules-44-blue)
 ![dependencies-0](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![python-3.10%2B](https://img.shields.io/badge/python-3.10%2B-blue)
@@ -48,8 +48,8 @@ web-api.service  NoNewPrivileges  ->  no
 ## 三步跑通
 
 ```bash
-# 1. 安装（也可以 uvx --from unitlint unitlint ...）
-pip install unitlint
+# 1. 在仓库根目录从源码安装（PyPI 尚未首发；首发后可直接 pip install unitlint）
+pip install .
 
 # 2. 审计一棵树：挂载的 rootfs、容器层、或者单个文件
 unitlint scan /path/to/rootfs
@@ -109,14 +109,37 @@ web-api.service (/usr/lib/systemd/system/web-api.service)
 
 ## 接进 CI
 
+本仓库同时是一个 composite Action，**从 Action 自己的 checkout 安装，不需要等 PyPI 首发**：
+
 ```yaml
-- name: Audit the image's units
-  run: |
-    pip install unitlint
-    unitlint scan ./rootfs --fail-on high --sarif > unitlint.sarif
-- uses: github/codeql-action/upload-sarif@v3
+- uses: xuange-hu/unitlint@v0.1.1
+  id: lint
   with:
-    sarif_file: unitlint.sarif
+    path: ./rootfs
+    fail-on: high
+    sarif: true
+- uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v5
+  if: always()
+  with:
+    name: unitlint-sarif
+    path: ${{ steps.lint.outputs.report }}
+```
+
+输入：`path`（默认 `.`）、`unit`（只扫一个单元）、`fail-on`
+（`none|note|low|medium|high|critical`，默认 `high`）、`sarif`（默认 `false`）。
+输出：`report`（报告路径）、`verdict`（`PASS`/`FAIL`）、`exit-code`。
+所有输入都通过环境变量传递，路径里带 shell 元字符也只是数据，不会变成命令。
+
+想自己写步骤也可以（从源码装，不依赖 PyPI）：
+
+```yaml
+- uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+  with:
+    repository: xuange-hu/unitlint
+    path: .unitlint
+- run: |
+    pip install ./.unitlint
+    unitlint scan ./rootfs --fail-on high --sarif > unitlint.sarif
 ```
 
 退出码：`0` 没有达到 `--fail-on` 的结论，`1` 有，`2` 输入读不了。`--fail-on none` 只出报告、不让 job 红。

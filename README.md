@@ -3,7 +3,7 @@
 **Audit systemd units the way systemd assembles them** — search-path priority, drop-in overrides, and who set a directive last.
 
 [![CI](https://github.com/xuange-hu/unitlint/actions/workflows/ci.yml/badge.svg)](https://github.com/xuange-hu/unitlint/actions/workflows/ci.yml)
-![tests-237%20passing](https://img.shields.io/badge/tests-237%20passing-brightgreen)
+![tests-247%20passing](https://img.shields.io/badge/tests-247%20passing-brightgreen)
 ![rules-44](https://img.shields.io/badge/rules-44-blue)
 ![dependencies-0](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![python-3.10%2B](https://img.shields.io/badge/python-3.10%2B-blue)
@@ -48,8 +48,8 @@ That output is the whole reason this tool exists.
 ## Three steps
 
 ```bash
-# 1. install (or: uvx --from unitlint unitlint ...)
-pip install unitlint
+# 1. install from the checkout (PyPI is not published yet; afterwards: pip install unitlint)
+pip install .
 
 # 2. audit a tree - a mounted rootfs, a container layer, or one file
 unitlint scan /path/to/rootfs
@@ -57,6 +57,34 @@ unitlint scan /path/to/rootfs
 # 3. gate CI on it
 unitlint scan ./image-rootfs --fail-on high --sarif > unitlint.sarif
 ```
+
+### In a GitHub Actions workflow
+
+The repository is also a composite Action, so there is nothing to install and no
+PyPI release to wait for. It installs itself from the Action's own checkout:
+
+```yaml
+- uses: xuange-hu/unitlint@v0.1.1
+  id: lint
+  with:
+    path: ./examples/rootfs
+    fail-on: high
+    sarif: true
+- uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v5
+  if: always()
+  with:
+    name: unitlint-sarif
+    path: ${{ steps.lint.outputs.report }}
+```
+
+Inputs: `path` (default `.`), `unit` (one unit only), `fail-on`
+(`none|note|low|medium|high|critical`, default `high`), `sarif` (default `false`).
+Outputs: `report` (file path), `verdict` (`PASS`/`FAIL`), `exit-code`.
+Inputs travel through environment variables, so a path containing shell
+metacharacters is data and not code. Ten tests exercise the entry point for
+real, including the exit-code gate and SARIF parsing.
+
+---
 
 No rootfs handy? The built-in corpus fires all 44 rules:
 
